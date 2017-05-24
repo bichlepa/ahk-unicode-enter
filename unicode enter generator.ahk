@@ -3,23 +3,58 @@
 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
-if not fileexist("unicode definitions.txt")
+files:=Object()
+loop,unicode definitions\*.txt
 {
-	MsgBox, 16, Unicode enter generator, Settings file not found. Please create a file named "unicode definitions.txt" in the script folder and run me again.
+	filefound:=true
+	files.push({path:A_LoopFileFullPath, name:A_LoopFileName})
+}
+
+
+if (files.MaxIndex() < 1)
+{
+	MsgBox, 16, Unicode enter generator, Settings file not found. Please a .txt file in the folder "unicode definitions" and run me again.
+	FileCreateDir, unicode definitions
+	ExitApp
+}
+
+filelist:=""
+for onefileindex, onefileobj in files
+{
+	if a_index != 1
+		filelist.="|"
+	filelist.=onefileobj.name
+	
+}
+gui,add, text, ,Select the definition!
+gui,add,DropDownList,vfiledropdown AltSubmit,%filelist%
+
+gui,add,button,vStart gstart, Generate!
+gui,show
+return
+start:
+gui,submit,NoHide
+if filedropdown<1
+{
+	MsgBox Please select a file
+	return
+}
+gui,destroy
+filepath:=files[filedropdown].path
+if not fileexist(filepath)
+{
+	MsgBox Sorry. File %filepath% not found
 	ExitApp
 }
 
 progresspercentage:=0
-;~ gui,add,text,,generating unicode enter script
-;~ gui,add,Progress,vprogressbar,0
-;~ gui,show, w300
 progress,,,generating unicode enter script,unicode enter generator
 settimer, updateprogress,100
 
 
 
 fileencoding, UTF-8
-FileRead,file,unicode definitions.txt
+FileRead,file,%filepath%
 FileDelete, unicode enter script.ahk
 
 StringReplace,file,file,`r`n,`n,all
