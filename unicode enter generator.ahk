@@ -399,6 +399,7 @@ for oneindex, oneentry in allEntriesInverted
 	progresspercentage:=6+(94/countallEntriesInverted*A_Index)
 }
 
+writefile()
 ;everything done
 progresspercentage = 100
 splashtextoff
@@ -409,9 +410,14 @@ return
 ;Adds code to the script file
 addcode(line)
 {
-	FileAppend, % line "`n", unicode enter script.ahk
+	global scriptcode
+	scriptcode.= line "`n"
 }
-
+writefile()
+{
+	global scriptcode
+	FileAppend, % scriptcode, unicode enter script.ahk
+}
 
 guiclose:
 ExitApp
