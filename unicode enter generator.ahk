@@ -74,7 +74,6 @@ addcode("SendMode Input")
 addcode("SetWorkingDir %A_ScriptDir%")
 addcode("#persistent")
 addcode("#hotstring EndChars #")
-addcode("sendlevel 1")
 
 ;Shows a new string after keyword was entered
 addcode("showNewChar:")
@@ -223,21 +222,31 @@ loop,parse,file,`n
 		}
 		
 		;Go through all strings
+		laststring:=""
 		loop,parse, charsString,% ","
 		{
-			onestring:=trim(a_loopfield)
-			expl:=""
-			;if a string has a comment, extract it
-			if ((posklammer := instr(onestring,"(")) && (substr(onestring,-0) == ")"))
+			;Allow commas inside the string which are escaped
+			if (substr(a_loopfield,-0,1) == "``")
 			{
-				expl := substr(onestring,posklammer + 1,strlen(onestring)-1-posklammer)
-				onestring := substr(onestring,1,posklammer-1)
-				onestring:=trim(onestring)
+				laststring.=substr(a_loopfield,1,strlen(a_loopfield)-1) ","
 			}
-			if (onestring != "")
+			else
 			{
-				chars.push(onestring)
-				expls.push(expl)
+				onestring:=trim(laststring a_loopfield)
+				laststring := 
+				expl:=""
+				;if a string has a comment, extract it
+				if ((posklammer := instr(onestring,"(")) && (substr(onestring,-0) == ")"))
+				{
+					expl := substr(onestring,posklammer + 1,strlen(onestring)-1-posklammer)
+					onestring := substr(onestring,1,posklammer-1)
+					onestring:=trim(onestring)
+				}
+				if (onestring != "")
+				{
+					chars.push(onestring)
+					expls.push(expl)
+				}
 			}
 		}
 		
@@ -289,17 +298,19 @@ for oneindex, oneentry in allFileEntries
 		;Check whether the keyword ist present
 		if not isobject(destObject[keyname])
 		{
-			;If keyword is already present, add the string to that keyword
+			;If keyword is not yet present, create it
 			destObject[keyname]:=Object()
 			destObject[keyname].chars:=Object()
+			destObject[keyname].explanations:=Object()
 		}
 		for onecharindex, onechar in oneentry.chars
 		{
-			;If keyword not present yet, create it and add the first string to it
+			;Add entry to the keyword
 			destObject[keyname].keyname:=keyname
 			destObject[keyname].chars.push(onechar)
 			destObject[keyname].keytype:=keytype
-			destObject[keyname].explanations:=oneentry.explanations
+			;~ MsgBox % onechar " - " oneentry.explanations[onecharindex]
+			destObject[keyname].explanations.push(oneentry.explanations[onecharindex])
 		}
 	}
 }
