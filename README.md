@@ -21,3 +21,7 @@ You can easily define your own keyword - character pairs. Create a new .txt file
 As keyword you can use any string which noes not include spaces or the **#**. You can also specify a hotkey as described in the AutoHotkey Help. Put that hotkey in those Brackets **{}**. Examples: `{left}` or `{^s}` or `{f5}`
 
 You can use the **=** in a keyword, but then you must make sure to put a space on each side of **=**. Example: `/=, =/ = ≠`
+
+You can add comments to each character. Puth them is brackets. Example: `animal = 🐅 (Tiger), 🐁 (Mouse), 🐘 (Elephant)`
+
+If you want a comma to be entered in a string, escape it. You can also enter linefeeds and other special keys as described in the AutoHotkey help. Example: `mail = Hello ,``n``nRegards``nPaul`
