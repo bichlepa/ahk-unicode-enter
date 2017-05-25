@@ -3,13 +3,13 @@
 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
+;At first search for definition files
 files:=Object()
 loop,unicode definitions\*.txt
 {
 	filefound:=true
 	files.push({path:A_LoopFileFullPath, name:A_LoopFileName})
 }
-
 
 if (files.MaxIndex() < 1)
 {
@@ -18,6 +18,7 @@ if (files.MaxIndex() < 1)
 	ExitApp
 }
 
+;create gui and ask user which definitions to use
 filelist:=""
 for onefileindex, onefileobj in files
 {
@@ -32,7 +33,9 @@ gui,add,DropDownList,vfiledropdown AltSubmit,%filelist%
 gui,add,button,vStart gstart, Generate!
 gui,show
 return
+
 start:
+;User has pressed start
 gui,submit,NoHide
 if filedropdown<1
 {
@@ -43,19 +46,19 @@ gui,destroy
 filepath:=files[filedropdown].path
 if not fileexist(filepath)
 {
+	;catch error which normally cannot occur
 	MsgBox Sorry. File %filepath% not found
 	ExitApp
 }
 
+;start showing progress
 progresspercentage:=0
-progress,,,generating unicode enter script,unicode enter generator
+progress,AM,,generating unicode enter script,unicode enter generator
 settimer, updateprogress,100
 
-
-
+;read file definitions
 fileencoding, UTF-8
 FileRead,file,%filepath%
-FileDelete, unicode enter script.ahk
 
 StringReplace,file,file,`r`n,`n,all
 StringReplace,file,file,`t,% " ",all
@@ -63,28 +66,39 @@ StringReplace,file,file,% "  ",% " ",all
 StringReplace,file,file,% "  ",% " ",all
 StringReplace,file,file,% "  ",% " ",all
 
+;Delete old script file
+FileDelete, unicode enter script.ahk
+;Start creating new script file
 addcode("#NoEnv")
 addcode("SendMode Input")
 addcode("SetWorkingDir %A_ScriptDir%")
 addcode("#persistent")
 addcode("#hotstring EndChars #")
 addcode("sendlevel 1")
+
+;Shows a new string after keyword was entered
 addcode("showNewChar:")
 addcode("gosub prepareNewChar")
 addcode("gosub showNextChar")
 addcode("return")
+
+;prepares to show a new string
 addcode("prepareNewChar:")
 addcode("lastsentchar:=""""")
 addcode("lastsentindex:=0")
 addcode("lastsentlength:=0")
 addcode("lastsentlength:=0")
 addcode("return")
+
+;Show the next string. If a string was previously entered, it will be deleted first.
 addcode("showNextChar:")
 addcode("settimer, turnOffTooltip, off")
 addcode("settimer, turnOffHotkeyShowNextChar, off")
+;find the next index
 addcode("lastsentindex++")
 addcode("if (lastsentindex > currentChars.maxindex())")
 addcode("	lastsentindex = 1")
+;Create the tooltip string. The current char will be shown on top
 addcode("currentcharsstring = ")
 addcode("currentcharsstring1 = ")
 addcode("currentcharsstring2 = ")
@@ -118,25 +132,34 @@ addcode("else")
 addcode("{")
 addcode("	tooltip,% currentcharsstring")
 addcode("}")
+;Delete the old string
 addcode("send,{bs %lastsentlength%}")
+;Send new string
 addcode("sendraw,% currentChars[lastsentindex]")
+;keep in mind which string was send last
 addcode("lastsentchar:=currentChars[lastsentindex]")
 addcode("lastsentlength:=new_strlen(currentChars[lastsentindex])")
+;wait until user releases #
 addcode("loop")
 addcode("{")
 addcode("	if (GetKeyState(""#"") == False)")
 addcode("		break")
 addcode("	sleep 10")
 addcode("}")
+;Set timer in order to remove the tooltip and if user does not press # for some seconds or presses an other key, pressing # later will have no effect
 addcode("settimer, turnOffTooltip, -1000")
 addcode("settimer, turnOffHotkeyShowNextChar, -5000")
 addcode("settimer, turnOffHotkeyShowNextChar2, 1")
 addcode("return")
+
+;remove the hotkey #
 addcode("turnOffHotkeyShowNextChar:")
 addcode("hotkey,#,showNextChar, off")
 addcode("settimer, turnOffHotkeyShowNextChar, off")
 addcode("settimer, turnOffHotkeyShowNextChar2, off")
 addcode("return")
+
+;Wait user to press any key
 addcode("turnOffHotkeyShowNextChar2:")
 addcode("Input, SingleKey, L1 T0.2 V, {LControl}{RControl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}{AppsKey}{F1}{F2}{F3}{F4}{F5}{F6}{F7}{F8}{F9}{F10}{F11}{F12}{Left}{Right}{Up}{Down}{Home}{End}{PgUp}{PgDn}{Del}{Ins}{BS}{Capslock}{Numlock}{PrintScreen}{Pause}")
 addcode("if (SingleKey && SingleKey != ""#"")")
@@ -145,6 +168,8 @@ addcode("return")
 addcode("turnOffTooltip:")
 addcode("tooltip")
 addcode("return")
+
+;Workaround since strlen() does not always have the correct result
 addcode("new_strlen(newstrlen_string)")
 addcode("{")
 addcode("	newstrlen_length:=0")
@@ -157,22 +182,36 @@ addcode("			newstrlen_length--")
 addcode("	}")
 addcode("	return newstrlen_length")
 addcode("}")
+
 progresspercentage:=1
 
+;start parsing the configurator file
 hotkeys:=Object()
 allFileEntries:=Object()
 loop,parse,file,`n
 {
-	pos:=instr(A_LoopField," = ")
 	lineindex:=a_index
-	if (pos)
+	;Search for the "=" character which separates the keywords from the strings
+	;there is a workaround to allow the usage of the "=" character as keyword or string. If the "=" is separated by a space on each side, it will be taken as the separator (this way the keys can have other "=" characters which will not be considered).
+	pos:=instr(A_LoopField," = ")
+	if (not pos)
 	{
-		namesString:=substr(A_LoopField,1,pos-1)
-		charsString:=substr(A_LoopField,pos + strlen(" = "))
+		pos:=instr(A_LoopField,"=")
+	}
+	else
+	{
+		pos+=1
+	}
+	if (pos) ;If a "=" was found
+	{
+		namesString:=substr(A_LoopField,1,pos-1) ;get everything from the left
+		charsString:=substr(A_LoopField,pos + strlen("=") ) ;get everything from the right
 		;~ MsgBox % namesString "---"charsString
 		names:=Object()
 		chars:=Object()
 		expls:=Object()
+		
+		;Go through all keywords
 		loop,parse, namesString,% ","
 		{
 			onename:=trim(a_loopfield)
@@ -181,13 +220,14 @@ loop,parse,file,`n
 			{
 				names.push(onename)
 			}
-			
-			
 		}
+		
+		;Go through all strings
 		loop,parse, charsString,% ","
 		{
 			onestring:=trim(a_loopfield)
 			expl:=""
+			;if a string has a comment, extract it
 			if ((posklammer := instr(onestring,"(")) && (substr(onestring,-0) == ")"))
 			{
 				expl := substr(onestring,posklammer + 1,strlen(onestring)-1-posklammer)
@@ -200,17 +240,40 @@ loop,parse,file,`n
 				expls.push(expl)
 			}
 		}
-		if (names.MaxIndex() && chars.MaxIndex())
+		
+		;Check whether a keyword or string was found
+		if (not names.MaxIndex())
+		{
+			MsgBox, 48, Unicode enter generator, Warning`, no keyword was found in this line: `n`n%a_loopfield%
+		}
+		else if (not chars.MaxIndex())
+		{
+			MsgBox, 48, Unicode enter generator, Warning`, no string was found in this line: `n`n%a_loopfield%
+		}
+		else
+		{
 			allFileEntries.push({names:names, chars:chars, explanations:expls})
+		}
+	}
+	else ;If "=" was not found
+	{ 
+		if (trim(a_loopfield) != "") ;if the line is not empty, show a warning
+		{
+			MsgBox, 48, Unicode enter generator, Warning`, the equal sign was not found in this line: `n`n%a_loopfield%
+		}
 	}
 }
+
 progresspercentage:=2
 
+;Go through all entries found in file and
+;find out wheter the keywords are hotstrings or hotkeys
+;Make a list of keywords and find all strings which belong to that keyword
 allHotkeys := Object()
 allHotstrings := Object()
 for oneindex, oneentry in allFileEntries
 {
-	for onenameindex, onename in oneentry.names
+	for onenameindex, onename in oneentry.names ;go through all keywords
 	{
 		keytype := "hotstring"
 		destObject := allHotstrings
@@ -223,13 +286,16 @@ for oneindex, oneentry in allFileEntries
 		else
 			keyname := onename
 		
+		;Check whether the keyword ist present
 		if not isobject(destObject[keyname])
 		{
+			;If keyword is already present, add the string to that keyword
 			destObject[keyname]:=Object()
 			destObject[keyname].chars:=Object()
 		}
 		for onecharindex, onechar in oneentry.chars
 		{
+			;If keyword not present yet, create it and add the first string to it
 			destObject[keyname].keyname:=keyname
 			destObject[keyname].chars.push(onechar)
 			destObject[keyname].keytype:=keytype
@@ -237,8 +303,13 @@ for oneindex, oneentry in allFileEntries
 		}
 	}
 }
+
 progresspercentage:=3
 
+;Sort all hotstrings by name
+;This is necessary because a short hotstring may interrupt a long hotstring if the short hotstring has higher priority.
+;This first hotstring mentioned in script will have higher priority than the second.
+;By sorting them the long hotstrings will have higher priority than the short ones
 allEntriesInverted:=Object()
 maxhotstringlength:=0
 for onename, oneentry in allHotstrings
@@ -264,10 +335,13 @@ for onename, oneentry in allHotkeys
 }
 
 progresspercentage:=6
+
+;At last go through all keywords and write the code to the script
 countallEntriesInverted:=allEntriesInverted.MaxIndex()
 for oneindex, oneentry in allEntriesInverted
 {
 	;~ MsgBox % oneentry.keytype " -" oneentry.keyname " - " oneentry.chars[1] "," oneentry.chars[2] "," oneentry.chars[3]
+	;Add hotkey or hotstring
 	If (oneentry.keytype = "hotkey")
 	{
 		addcode("~" oneentry.keyname "::")
@@ -275,6 +349,7 @@ for oneindex, oneentry in allEntriesInverted
 	else
 		addcode(":?:" oneentry.keyname "::")
 	
+	;Write variables which will contain the strings and their comments
 	codeline:="CurrentChars:= [" 
 	codelineexpl:="CurrentExplanations:= [" 
 	for onecharindex, onechar in oneentry.chars
@@ -292,27 +367,35 @@ for oneindex, oneentry in allEntriesInverted
 	codelineexpl.="]" 
 	addcode(codeline)
 	addcode(codelineexpl)
+	
+	;Enable # hotkey
 	addcode("hotkey,#,showNextChar, on")
-	addcode("fileappend,%a_tickcount% %a_thishotkey%, log.txt")
-	addcode("settimer,turnOffHotkeyShowNextChar, -5000")
+	;~ addcode("fileappend,%a_tickcount% %a_thishotkey%, log.txt") ;only for debugging
+	addcode("settimer,turnOffHotkeyShowNextChar, -5000") ;disable the # hotkey after some seconds
+	
 	addcode("if (not instr(a_thishotkey,"":?:""))")
 	addcode("{")
+	 ;If this is a hotkey, only prepare the new char without showing it. It will only be shown when user presses #
 	addcode("	settimer,prepareNewChar,-1")
 	addcode("}")
 	addcode("else")
 	addcode("{")
+	;If this is a hotstring, the user already pressed #. So show the first char
 	addcode("	settimer,showNewChar,-1")
 	addcode("}")
 	addcode("return")
 	
 	progresspercentage:=6+(94/countallEntriesInverted*A_Index)
 }
+
+;everything done
 progresspercentage = 100
 splashtextoff
 run, unicode enter script.ahk
 ExitApp
 return
 
+;Adds code to the script file
 addcode(line)
 {
 	FileAppend, % line "`n", unicode enter script.ahk
@@ -328,7 +411,8 @@ progress,%progresspercentage%
 return
 
 
-
+;Only for debugging.
+;it will open a window whith two edit fields. It will tell you whether the contents of the edit fields are equal.
 f12::
 gui,compare:default
 gui,destroy
