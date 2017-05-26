@@ -12,7 +12,7 @@ You can change the definitions by editing "unicode definitions.txt" then run "un
 Enter a keyword and press **#**. Your keyword will be replaced by the first unicode character. If multiple unicode characters have the same keyword you can press **#** multiple times and choose which one you want.
 
 ## how to define
-You can easily define your own keyword - character pairs. Create a new .txt file in the folder "unicode definitions" and follow those rules:
+You can easily define your own keyword - character pairs. Create a new .txt file in the folder "unicode definitions" (use UTF-8 encoding) and follow those rules:
 * write one or multiple keywords separated by comma.
 * enter an equal sign: **=**
 * write one or multiple characters or strings separated by comma.
