@@ -6,7 +6,7 @@ minus, - = − (minus), ⁻,­ ₋, (weicher Bindestrich), ‐ (Bindestrich), �
 ( = ₍, ⁽, ⁅, 〈, ❨, ❪, ❬, ❮, ❰, ❲, ❴
 ) = ₎, ⁾, ⁆, 〉, ❩, ❫, ❭, ❯, ❱, ❳, ❵
 () = ≬ (zwischen)
-incr, ikrement, increment = ∆
+incr, inkrement, increment = ∆
 product, produkt = ∏, ∐ (Koprodukt)
 sum, summe = ∑
 root, wurzel = √, ∛, ∜
@@ -31,7 +31,7 @@ beweisende, endebeweis, ende = ∎
 ~ = ≈, ≋
 === = ≡
 = = ≠ (Ungleich), ≈ (fast gleich), ≡ (Kongruent zu), ≣ (genau Äquivalent), ₌,⁼, ≅ (ungefähr gleich), ≆ (ungefähr, aber nicht genau gleich), ≇ (Weder ungefähr noch genau gleich), ≉ (nicht fast gleich), ≊ (fast gleich oder gleich), ≍ (aquivalent), ≭ (nicht äquivalent), ≙ (entspricht), ≝ (gleich nach Definition), ≟ (Vielleicht gleich), ⊜, ⌯ (Symmetrie)
-/= = ≠
+/=, =/ = ≠
 <= = ≤, ≦, ≨ (kleiner als aber nicht gleich),⋜ (gleich oder kleiner als)
 >=,> = ≥, ≧, ≩ (größer als aber nicht gleich), ⋝ (gleich oder größer als)
 < =  ‹, «, ≤,≪ (viel kleiner als), ⋘ (sehr viel kleiner als)

@@ -3,6 +3,10 @@
 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
+;user settings
+triggerhotkey:="break"
+
+
 ;At first search for definition files
 files:=Object()
 loop,unicode definitions\*.txt
@@ -60,6 +64,12 @@ settimer, updateprogress,100
 fileencoding, UTF-8
 FileRead,file,%filepath%
 
+IfInString,file,`n#include
+{
+	fileInclude:=substr(file,instr(file, "`n",, instr(file,"`n#include") + 5) +1) 
+	file:=substr(file,1,instr(file,"#include")-1) 
+}
+
 StringReplace,file,file,`r`n,`n,all
 StringReplace,file,file,`t,% " ",all
 StringReplace,file,file,% "  ",% " ",all
@@ -73,11 +83,16 @@ addcode("#NoEnv")
 addcode("SendMode Input")
 addcode("SetWorkingDir %A_ScriptDir%")
 addcode("#persistent")
-addcode("#hotstring EndChars #")
+addcode("#hotstring ?*B0")
+
+;Include the content which was defined by user
+addcode("`n" fileInclude "`n")
 
 ;Shows a new string after keyword was entered
 addcode("showNewChar:")
 addcode("gosub prepareNewChar")
+addcode("return")
+addcode(triggerhotkey "::")
 addcode("gosub showNextChar")
 addcode("return")
 
@@ -85,8 +100,14 @@ addcode("return")
 addcode("prepareNewChar:")
 addcode("lastsentchar:=""""")
 addcode("lastsentindex:=0")
-addcode("lastsentlength:=0")
-addcode("lastsentlength:=0")
+addcode("if instr(a_thishotkey, ""::"")")
+addcode("{")
+addcode("	lastsentlength:=strlen(substr(a_thishotkey,3))")
+addcode("}")
+addcode("else")
+addcode("{")
+addcode("	lastsentlength:=0")
+addcode("}")
 addcode("return")
 
 ;Show the next string. If a string was previously entered, it will be deleted first.
@@ -138,22 +159,22 @@ addcode("sendraw,% currentChars[lastsentindex]")
 ;keep in mind which string was send last
 addcode("lastsentchar:=currentChars[lastsentindex]")
 addcode("lastsentlength:=new_strlen(currentChars[lastsentindex])")
-;wait until user releases #
+;wait until user releases the hotkey
 addcode("loop")
 addcode("{")
-addcode("	if (GetKeyState(""#"") == False)")
+addcode("	if (GetKeyState(""" triggerhotkey """) == False)")
 addcode("		break")
 addcode("	sleep 10")
 addcode("}")
-;Set timer in order to remove the tooltip and if user does not press # for some seconds or presses an other key, pressing # later will have no effect
+;Set timer in order to remove the tooltip and if user does not press the hotkey for some seconds or presses an other key, pressing # later will have no effect
 addcode("settimer, turnOffTooltip, -1000")
 addcode("settimer, turnOffHotkeyShowNextChar, -5000")
 addcode("settimer, turnOffHotkeyShowNextChar2, 1")
 addcode("return")
 
-;remove the hotkey #
+;remove the hotkey
 addcode("turnOffHotkeyShowNextChar:")
-addcode("hotkey,#,showNextChar, off")
+addcode("hotkey," triggerhotkey ",showNextChar, off")
 addcode("settimer, turnOffHotkeyShowNextChar, off")
 addcode("settimer, turnOffHotkeyShowNextChar2, off")
 addcode("return")
@@ -161,7 +182,7 @@ addcode("return")
 ;Wait user to press any key
 addcode("turnOffHotkeyShowNextChar2:")
 addcode("Input, SingleKey, L1 T0.2 V, {LControl}{RControl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}{AppsKey}{F1}{F2}{F3}{F4}{F5}{F6}{F7}{F8}{F9}{F10}{F11}{F12}{Left}{Right}{Up}{Down}{Home}{End}{PgUp}{PgDn}{Del}{Ins}{BS}{Capslock}{Numlock}{PrintScreen}{Pause}")
-addcode("if (SingleKey && SingleKey != ""#"")")
+addcode("if (SingleKey && SingleKey != """ triggerhotkey """)")
 addcode("goto turnOffHotkeyShowNextChar")
 addcode("return")
 addcode("turnOffTooltip:")
@@ -358,7 +379,7 @@ for oneindex, oneentry in allEntriesInverted
 		addcode("~" oneentry.keyname "::")
 	}
 	else
-		addcode(":?:" oneentry.keyname "::")
+		addcode("::" oneentry.keyname "::")
 	
 	;Write variables which will contain the strings and their comments
 	codeline:="CurrentChars:= [" 
@@ -379,19 +400,19 @@ for oneindex, oneentry in allEntriesInverted
 	addcode(codeline)
 	addcode(codelineexpl)
 	
-	;Enable # hotkey
-	addcode("hotkey,#,showNextChar, on")
+	;Enable hotkey
+	addcode("hotkey," triggerhotkey ",showNextChar, on")
 	;~ addcode("fileappend,%a_tickcount% %a_thishotkey%, log.txt") ;only for debugging
-	addcode("settimer,turnOffHotkeyShowNextChar, -5000") ;disable the # hotkey after some seconds
+	addcode("settimer,turnOffHotkeyShowNextChar, -5000") ;disable the hotkey after some seconds
 	
 	addcode("if (not instr(a_thishotkey,"":?:""))")
 	addcode("{")
-	 ;If this is a hotkey, only prepare the new char without showing it. It will only be shown when user presses #
+	 ;If this is a hotkey, only prepare the new char without showing it. It will only be shown when user presses the hotkey
 	addcode("	settimer,prepareNewChar,-1")
 	addcode("}")
 	addcode("else")
 	addcode("{")
-	;If this is a hotstring, the user already pressed #. So show the first char
+	;If this is a hotstring, the user already pressed the hotkey. So show the first char
 	addcode("	settimer,showNewChar,-1")
 	addcode("}")
 	addcode("return")

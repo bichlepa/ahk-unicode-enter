@@ -25,3 +25,7 @@ You can use the **=** in a keyword, but then you must make sure to put a space o
 You can add comments to each character. Puth them is brackets. Example: `animal = 🐅 (Tiger), 🐁 (Mouse), 🐘 (Elephant)`
 
 If you want a comma to be entered in a string, escape it (`,). You can also enter linefeeds and other special keys as described in the AutoHotkey help.
+
+You can insert variables content by surrounding them with the `"` character. Example: `time = " a_now "`
+
+If you write `#include`, the remainder of the file will be included into your script. This allows you to define your own variables.
